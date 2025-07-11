@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Trash2, MessageSquare, Plus, Minus, DollarSign, Users } from 'lucide-react';
-import type { ShoppingGroup, CartItem } from '../types';
+import type { ShoppingGroup } from '../types';
 import toast from 'react-hot-toast';
 
 interface CartViewProps {
@@ -19,7 +19,8 @@ const CartView: React.FC<CartViewProps> = ({
   const [commentInputs, setCommentInputs] = useState<{ [itemId: string]: string }>({});
   const [showComments, setShowComments] = useState<{ [itemId: string]: boolean }>({});
 
-  const cartItems = Object.values(group.cart);
+  // ✅ FIXED this line to avoid crash
+  const cartItems = Object.values(group.cart || {});
   const memberCount = Object.keys(group.members).length;
   const costPerMember = group.totalSpent / memberCount;
 
@@ -69,7 +70,7 @@ const CartView: React.FC<CartViewProps> = ({
             <p className="text-sm text-gray-600">Per Member</p>
           </div>
         </div>
-        
+
         {/* Budget Progress */}
         <div className="mt-6">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
@@ -78,9 +79,8 @@ const CartView: React.FC<CartViewProps> = ({
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
-              className={`h-2 rounded-full transition-all duration-300 ${
-                group.totalSpent > group.budget ? 'bg-red-500' : 'bg-green-500'
-              }`}
+              className={`h-2 rounded-full transition-all duration-300 ${group.totalSpent > group.budget ? 'bg-red-500' : 'bg-green-500'
+                }`}
               style={{ width: `${Math.min((group.totalSpent / group.budget) * 100, 100)}%` }}
             />
           </div>
@@ -94,7 +94,7 @@ const CartView: React.FC<CartViewProps> = ({
             Shopping Cart ({cartItems.length} items)
           </h2>
         </div>
-        
+
         {cartItems.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-gray-500">Your cart is empty. Start adding some products!</p>
@@ -125,7 +125,7 @@ const CartView: React.FC<CartViewProps> = ({
                         <p className="text-sm text-gray-600">${item.price.toFixed(2)} each</p>
                       </div>
                     </div>
-                    
+
                     {/* Quantity Controls */}
                     <div className="flex items-center space-x-3 mt-4">
                       <button
@@ -142,15 +142,17 @@ const CartView: React.FC<CartViewProps> = ({
                       >
                         <Plus className="h-4 w-4" />
                       </button>
-                      
+
                       <button
-                        onClick={() => setShowComments(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                        onClick={() =>
+                          setShowComments((prev) => ({ ...prev, [item.id]: !prev[item.id] }))
+                        }
                         className="flex items-center text-blue-600 hover:text-blue-700 text-sm ml-4"
                       >
                         <MessageSquare className="h-4 w-4 mr-1" />
                         Comments ({item.comments?.length || 0})
                       </button>
-                      
+
                       <button
                         onClick={() => onRemoveItem(item.id)}
                         className="flex items-center text-red-600 hover:text-red-700 text-sm ml-4"
@@ -159,7 +161,7 @@ const CartView: React.FC<CartViewProps> = ({
                         Remove
                       </button>
                     </div>
-                    
+
                     {/* Comments Section */}
                     {showComments[item.id] && (
                       <div className="mt-4 p-4 bg-gray-50 rounded-lg">
@@ -173,20 +175,26 @@ const CartView: React.FC<CartViewProps> = ({
                               <p className="text-gray-700 mt-1">{comment.text}</p>
                             </div>
                           ))}
-                          
+
                           {/* Add Comment */}
                           <div className="flex space-x-2 mt-3">
                             <input
                               type="text"
                               placeholder="Add a comment..."
                               value={commentInputs[item.id] || ''}
-                              onChange={(e) => setCommentInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
+                              onChange={(e) =>
+                                setCommentInputs((prev) => ({
+                                  ...prev,
+                                  [item.id]: e.target.value
+                                }))
+                              }
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              onKeyPress={(e) => e.key === 'Enter' && handleCommentSubmit(item.id)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(item.id)}
                             />
                             <button
                               onClick={() => handleCommentSubmit(item.id)}
                               className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
+                              disabled={!commentInputs[item.id]?.trim()}
                             >
                               Post
                             </button>

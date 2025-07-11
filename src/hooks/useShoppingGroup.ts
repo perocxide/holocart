@@ -28,48 +28,64 @@ export const useShoppingGroup = (groupId: string | null, user: User | null) => {
     return unsubscribe;
   }, [groupId]);
 
-  const createGroup = async (name: string, description: string, budget: number) => {
-    if (!user) throw new Error('User not authenticated');
+const createGroup = async (name: string, description: string, budget: number) => {
+  if (!user) throw new Error('User not authenticated');
 
-    const groupId = uuidv4();
-    const newGroup: ShoppingGroup = {
-      id: groupId,
-      name,
-      description,
-      createdBy: user.uid,
-      createdAt: Date.now(),
-      members: {
-        [user.uid]: user
-      },
-      cart: {},
-      budget,
-      totalSpent: 0,
-      activity: []
-    };
-
-    const groupRef = ref(database, `groups/${groupId}`);
-    await set(groupRef, newGroup);
-    return groupId;
+  const groupId = uuidv4();
+  const safeUser = {
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName || 'Anonymous',
+    ...(user.photoURL ? { photoURL: user.photoURL } : {})
   };
 
-  const joinGroup = async (groupId: string) => {
-    if (!user) throw new Error('User not authenticated');
-
-    const memberRef = ref(database, `groups/${groupId}/members/${user.uid}`);
-    await set(memberRef, user);
-
-    // Add activity log
-    const activityRef = ref(database, `groups/${groupId}/activity`);
-    const newActivity: ActivityLog = {
-      id: uuidv4(),
-      type: 'member_joined',
-      message: `${user.displayName} joined the group`,
-      user: user.uid,
-      userName: user.displayName,
-      timestamp: Date.now()
-    };
-    await push(activityRef, newActivity);
+  const newGroup: ShoppingGroup = {
+    id: groupId,
+    name,
+    description,
+    createdBy: user.uid,
+    createdAt: Date.now(),
+    members: {
+      [user.uid]: safeUser
+    },
+    cart: {},
+    budget,
+    totalSpent: 0,
+    activity: []
   };
+
+  const groupRef = ref(database, `groups/${groupId}`);
+  await set(groupRef, newGroup);
+  return groupId;
+};
+
+
+ const joinGroup = async (groupId: string) => {
+  if (!user) throw new Error('User not authenticated');
+
+  const safeUser = {
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName || 'Anonymous',
+    ...(user.photoURL ? { photoURL: user.photoURL } : {})
+  };
+
+  const memberRef = ref(database, `groups/${groupId}/members/${user.uid}`);
+  await set(memberRef, safeUser);
+
+  // Add activity log
+  const activityRef = ref(database, `groups/${groupId}/activity`);
+  const newActivity: ActivityLog = {
+    id: uuidv4(),
+    type: 'member_joined',
+    message: `${safeUser.displayName} joined the group`,
+    user: user.uid,
+    userName: safeUser.displayName,
+    timestamp: Date.now()
+  };
+  await push(activityRef, newActivity);
+};
+
 
   const addItemToCart = async (item: Omit<CartItem, 'id' | 'addedBy' | 'addedAt' | 'comments'>) => {
     if (!user || !group) throw new Error('User not authenticated or group not found');
