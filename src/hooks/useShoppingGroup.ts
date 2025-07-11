@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ref, onValue, push, set, update, remove } from 'firebase/database';
+import { ref, onValue, push, set, remove } from 'firebase/database';
 import { database } from '../config/firebase';
 import { v4 as uuidv4 } from 'uuid';
 import type { ShoppingGroup, CartItem, ActivityLog, User } from '../types';
