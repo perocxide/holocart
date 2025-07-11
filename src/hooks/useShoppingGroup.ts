@@ -18,14 +18,23 @@ export const useShoppingGroup = (groupId: string | null, user: User | null) => {
     const groupRef = ref(database, `groups/${groupId}`);
     const unsubscribe = onValue(groupRef, (snapshot) => {
       if (snapshot.exists()) {
-        setGroup({ id: groupId, ...snapshot.val() }); // Fixed here
+        const data = snapshot.val();
+
+        // ✅ Ensure activity is an array (from Firebase object)
+        const activity = data.activity ? Object.values(data.activity) : [];
+
+        setGroup({
+          id: groupId,
+          ...data,
+          activity
+        });
       } else {
         setGroup(null);
       }
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => unsubscribe();
   }, [groupId]);
 
   const createGroup = async (name: string, description: string, budget: number) => {
@@ -107,9 +116,9 @@ export const useShoppingGroup = (groupId: string | null, user: User | null) => {
     const newActivity: ActivityLog = {
       id: uuidv4(),
       type: 'item_added',
-      message: `${user.displayName} added ${item.name} to cart`,
+      message: `${user.displayName || 'User'} added ${item.name} to cart`,
       user: user.uid,
-      userName: user.displayName,
+      userName: user.displayName || 'User',
       timestamp: Date.now()
     };
     await push(activityRef, newActivity);
@@ -124,7 +133,10 @@ export const useShoppingGroup = (groupId: string | null, user: User | null) => {
     const itemRef = ref(database, `groups/${group.id}/cart/${itemId}`);
     await remove(itemRef);
 
-    const newTotal = group.totalSpent - (item.price * item.quantity);
+    // Recalculate totalSpent from remaining cart items
+    const remainingCart = { ...group.cart };
+    delete remainingCart[itemId];
+    const newTotal = Object.values(remainingCart).reduce((sum, cartItem: any) => sum + (cartItem.price * cartItem.quantity), 0);
     const totalRef = ref(database, `groups/${group.id}/totalSpent`);
     await set(totalRef, newTotal);
 
@@ -132,9 +144,9 @@ export const useShoppingGroup = (groupId: string | null, user: User | null) => {
     const newActivity: ActivityLog = {
       id: uuidv4(),
       type: 'item_removed',
-      message: `${user.displayName} removed ${item.name} from cart`,
+      message: `${user.displayName || 'User'} removed ${item.name} from cart`,
       user: user.uid,
-      userName: user.displayName,
+      userName: user.displayName || 'User',
       timestamp: Date.now()
     };
     await push(activityRef, newActivity);
@@ -146,14 +158,13 @@ export const useShoppingGroup = (groupId: string | null, user: User | null) => {
     const item = group.cart[itemId];
     if (!item) throw new Error('Item not found');
 
-    const oldTotal = item.price * item.quantity;
-    const newTotal = item.price * quantity;
-    const totalDiff = newTotal - oldTotal;
 
     const quantityRef = ref(database, `groups/${group.id}/cart/${itemId}/quantity`);
     await set(quantityRef, quantity);
 
-    const updatedTotal = group.totalSpent + totalDiff;
+    // Recalculate totalSpent from updated cart items
+    const updatedCart = { ...group.cart, [itemId]: { ...group.cart[itemId], quantity } };
+    const updatedTotal = Object.values(updatedCart).reduce((sum, cartItem: any) => sum + (cartItem.price * cartItem.quantity), 0);
     const totalRef = ref(database, `groups/${group.id}/totalSpent`);
     await set(totalRef, updatedTotal);
   };
@@ -166,7 +177,7 @@ export const useShoppingGroup = (groupId: string | null, user: User | null) => {
       id: commentId,
       text,
       author: user.uid,
-      authorName: user.displayName,
+      authorName: user.displayName || 'User',
       timestamp: Date.now()
     };
 

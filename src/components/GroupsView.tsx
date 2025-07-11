@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Users, Calendar, DollarSign, Copy, Check, Trash2 } from 'lucide-react';
-import type { ShoppingGroup } from '../types';
 import toast from 'react-hot-toast';
+import type { ShoppingGroup } from '../types';
 
 interface GroupsViewProps {
   groups: ShoppingGroup[];
@@ -9,7 +9,7 @@ interface GroupsViewProps {
   onCreateGroup: (name: string, description: string, budget: number) => void;
   onJoinGroup: (groupId: string) => void;
   onSelectGroup: (groupId: string) => void;
-  onDeleteGroup?: (groupId: string) => void;
+  onDeleteGroup: (groupId: string) => void;
 }
 
 const GroupsView: React.FC<GroupsViewProps> = ({
@@ -32,12 +32,8 @@ const GroupsView: React.FC<GroupsViewProps> = ({
   const joinInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (showCreateForm && createInputRef.current) {
-      createInputRef.current.focus();
-    }
-    if (showJoinForm && joinInputRef.current) {
-      joinInputRef.current.focus();
-    }
+    if (showCreateForm && createInputRef.current) createInputRef.current.focus();
+    if (showJoinForm && joinInputRef.current) joinInputRef.current.focus();
   }, [showCreateForm, showJoinForm]);
 
   const handleCreateGroup = async (e: React.FormEvent) => {
@@ -78,12 +74,13 @@ const GroupsView: React.FC<GroupsViewProps> = ({
   const copyGroupId = (groupId: string) => {
     navigator.clipboard.writeText(groupId);
     setCopiedGroupId(groupId);
-    toast.success('Group ID copied to clipboard!');
+    toast.success('Group ID copied!');
     setTimeout(() => setCopiedGroupId(null), 2000);
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString();
+    const date = new Date(timestamp);
+    return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleDateString();
   };
 
   return (
@@ -92,16 +89,10 @@ const GroupsView: React.FC<GroupsViewProps> = ({
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Shopping Groups</h2>
         <div className="flex space-x-3">
-          <button
-            onClick={() => setShowJoinForm(true)}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
+          <button onClick={() => setShowJoinForm(true)} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
             Join Group
           </button>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-          >
+          <button onClick={() => setShowCreateForm(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
             <Plus className="h-4 w-4 mr-2" />
             Create Group
           </button>
@@ -113,57 +104,17 @@ const GroupsView: React.FC<GroupsViewProps> = ({
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Group</h3>
           <form onSubmit={handleCreateGroup} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Group Name</label>
-              <input
-                ref={createInputRef}
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Family Grocery Shopping"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="What's this group for?"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Budget ($)</label>
-              <input
-                type="number"
-                required
-                min="0"
-                step="0.01"
-                value={formData.budget}
-                onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="100.00"
-              />
-            </div>
+            <input ref={createInputRef} required type="text" placeholder="Group Name" className="w-full border p-2 rounded"
+              value={formData.name} onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))} />
+            <textarea placeholder="Description" rows={3} className="w-full border p-2 rounded"
+              value={formData.description} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} />
+            <input required type="number" min="0" step="0.01" placeholder="Budget"
+              value={formData.budget} onChange={(e) => setFormData((prev) => ({ ...prev, budget: e.target.value }))}
+              className="w-full border p-2 rounded" />
             <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setShowCreateForm(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loadingCreate}
-                className={`px-4 py-2 text-white rounded-lg ${
-                  loadingCreate ? 'bg-blue-300' : 'bg-blue-600 hover:bg-blue-700'
-                } transition-colors`}
-              >
-                {loadingCreate ? 'Creating...' : 'Create Group'}
+              <button type="button" onClick={() => setShowCreateForm(false)} className="bg-gray-200 px-4 py-2 rounded">Cancel</button>
+              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+                {loadingCreate ? 'Creating...' : 'Create'}
               </button>
             </div>
           </form>
@@ -173,36 +124,14 @@ const GroupsView: React.FC<GroupsViewProps> = ({
       {/* Join Group Form */}
       {showJoinForm && (
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Join Existing Group</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Join Group</h3>
           <form onSubmit={handleJoinGroup} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Group ID</label>
-              <input
-                ref={joinInputRef}
-                type="text"
-                required
-                value={joinGroupId}
-                onChange={(e) => setJoinGroupId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter group ID to join"
-              />
-            </div>
+            <input ref={joinInputRef} required type="text" placeholder="Group ID"
+              value={joinGroupId} onChange={(e) => setJoinGroupId(e.target.value)} className="w-full border p-2 rounded" />
             <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setShowJoinForm(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loadingJoin}
-                className={`px-4 py-2 text-white rounded-lg ${
-                  loadingJoin ? 'bg-blue-300' : 'bg-blue-600 hover:bg-blue-700'
-                } transition-colors`}
-              >
-                {loadingJoin ? 'Joining...' : 'Join Group'}
+              <button type="button" onClick={() => setShowJoinForm(false)} className="bg-gray-200 px-4 py-2 rounded">Cancel</button>
+              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+                {loadingJoin ? 'Joining...' : 'Join'}
               </button>
             </div>
           </form>
@@ -212,81 +141,26 @@ const GroupsView: React.FC<GroupsViewProps> = ({
       {/* Groups List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {groups.map((group) => (
-          <div
-            key={group.id}
-            className={`bg-white rounded-lg shadow-sm p-6 border-2 cursor-pointer transition-all ${
-              currentGroup?.id === group.id
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-            onClick={() => onSelectGroup(group.id)}
-          >
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">{group.name}</h3>
+          <div key={group.id} className={`bg-white p-4 rounded-lg border shadow-sm cursor-pointer transition ${
+            currentGroup?.id === group.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+          }`} onClick={() => onSelectGroup(group.id)}>
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-lg">{group.name}</h3>
               <div className="flex items-center space-x-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    copyGroupId(group.id);
-                  }}
-                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label="Copy Group ID"
-                >
-                  {copiedGroupId === group.id ? (
-                    <Check className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
+                <button onClick={(e) => { e.stopPropagation(); copyGroupId(group.id); }} className="text-gray-400 hover:text-gray-600">
+                  {copiedGroupId === group.id ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                 </button>
-                {onDeleteGroup && (
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      onDeleteGroup(group.id);
-                    }}
-                    className="p-1 text-red-400 hover:text-red-600 transition-colors"
-                    aria-label="Delete Group"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
+                <button onClick={(e) => { e.stopPropagation(); onDeleteGroup(group.id); }} className="text-red-500 hover:text-red-700">
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
-
-            <p className="text-gray-600 text-sm mb-4">{group.description}</p>
-
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex items-center">
-                <Users className="h-4 w-4 mr-2" />
-                {group.members ? Object.keys(group.members).length : 0} members
-              </div>
-              <div className="flex items-center">
-                <DollarSign className="h-4 w-4 mr-2" />
-                ${(group.totalSpent ?? 0).toFixed(2)} / ${(group.budget ?? 0).toFixed(2)}
-              </div>
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 mr-2" />
-                Created {formatDate(group.createdAt)}
-              </div>
-              {group.totalSpent > group.budget && (
-                <div className="text-red-500 text-xs font-medium">Over budget!</div>
-              )}
-            </div>
-
-            <div className="mt-4">
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    group.totalSpent > group.budget ? 'bg-red-500' : 'bg-green-500'
-                  }`}
-                  style={{
-                    width: `${Math.min(
-                      ((group.totalSpent ?? 0) / (group.budget || 1)) * 100,
-                      100
-                    )}%`,
-                  }}
-                />
-              </div>
+            <p className="text-gray-600 text-sm mt-1">{group.description}</p>
+            <div className="mt-3 text-sm space-y-1 text-gray-600">
+              <div className="flex items-center"><Users className="h-4 w-4 mr-1" /> {Object.keys(group.members || {}).length} members</div>
+              <div className="flex items-center"><DollarSign className="h-4 w-4 mr-1" /> ${group.totalSpent?.toFixed(2)} / ${group.budget?.toFixed(2)}</div>
+              <div className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> Created {formatDate(group.createdAt)}</div>
+              {group.totalSpent > group.budget && <div className="text-red-500 text-xs font-medium">Over budget!</div>}
             </div>
           </div>
         ))}
