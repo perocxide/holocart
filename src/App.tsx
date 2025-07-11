@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './hooks/useAuth';
@@ -17,7 +17,7 @@ function App() {
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [userGroups, setUserGroups] = useState<any[]>([]);
   
-  const { group, loading: groupLoading, createGroup, joinGroup, addItemToCart, removeItemFromCart, updateItemQuantity, addComment } = useShoppingGroup(currentGroupId, user);
+  const { group, createGroup, joinGroup, addItemToCart, removeItemFromCart, updateItemQuantity, addComment } = useShoppingGroup(currentGroupId, user);
 
   useEffect(() => {
     // In a real app, you would fetch user's groups from Firebase
