@@ -19,10 +19,13 @@ const CartView: React.FC<CartViewProps> = ({
   const [commentInputs, setCommentInputs] = useState<{ [itemId: string]: string }>({});
   const [showComments, setShowComments] = useState<{ [itemId: string]: boolean }>({});
 
-  // ✅ FIXED this line to avoid crash
   const cartItems = Object.values(group.cart || {});
-  const memberCount = Object.keys(group.members).length;
-  const costPerMember = group.totalSpent / memberCount;
+  const memberCount = Object.keys(group.members || {}).length || 1;
+
+  const totalSpent = typeof group.totalSpent === 'number' ? group.totalSpent : 0;
+  const budget = typeof group.budget === 'number' ? group.budget : 1;
+
+  const costPerMember = totalSpent / memberCount;
 
   const handleCommentSubmit = (itemId: string) => {
     const comment = commentInputs[itemId]?.trim();
@@ -52,14 +55,14 @@ const CartView: React.FC<CartViewProps> = ({
             <div className="flex items-center justify-center mb-2">
               <DollarSign className="h-8 w-8 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">${group.totalSpent.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-gray-900">${totalSpent.toFixed(2)}</p>
             <p className="text-sm text-gray-600">Total Spent</p>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center mb-2">
               <DollarSign className="h-8 w-8 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">${group.budget.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-gray-900">${budget.toFixed(2)}</p>
             <p className="text-sm text-gray-600">Budget</p>
           </div>
           <div className="text-center">
@@ -75,13 +78,14 @@ const CartView: React.FC<CartViewProps> = ({
         <div className="mt-6">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>Budget Usage</span>
-            <span>{((group.totalSpent / group.budget) * 100).toFixed(1)}%</span>
+            <span>{((totalSpent / budget) * 100).toFixed(1)}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
-              className={`h-2 rounded-full transition-all duration-300 ${group.totalSpent > group.budget ? 'bg-red-500' : 'bg-green-500'
-                }`}
-              style={{ width: `${Math.min((group.totalSpent / group.budget) * 100, 100)}%` }}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                totalSpent > budget ? 'bg-red-500' : 'bg-green-500'
+              }`}
+              style={{ width: `${Math.min((totalSpent / budget) * 100, 100)}%` }}
             />
           </div>
         </div>

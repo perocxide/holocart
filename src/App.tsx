@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './hooks/useAuth';
@@ -10,23 +10,46 @@ import GroupsView from './components/GroupsView';
 import ActivityView from './components/ActivityView';
 import ProductSearch from './components/ProductSearch';
 import toast from 'react-hot-toast';
+import { ref, remove, onValue } from 'firebase/database';
+import { database } from './config/firebase';
 
 function App() {
   const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'cart' | 'groups' | 'activity'>('cart');
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [userGroups, setUserGroups] = useState<any[]>([]);
-  
-  const { group, createGroup, joinGroup, addItemToCart, removeItemFromCart, updateItemQuantity, addComment } = useShoppingGroup(currentGroupId, user);
+
+  const {
+    group,
+    createGroup,
+    joinGroup,
+    addItemToCart,
+    removeItemFromCart,
+    updateItemQuantity,
+    addComment
+  } = useShoppingGroup(currentGroupId, user);
 
   useEffect(() => {
-    // In a real app, you would fetch user's groups from Firebase
-    // For demo purposes, we'll use localStorage
-    const savedGroups = localStorage.getItem('userGroups');
-    if (savedGroups) {
-      setUserGroups(JSON.parse(savedGroups));
-    }
-    
+    if (!user) return;
+
+    const userGroupsRef = ref(database, 'groups');
+    const unsubscribe = onValue(userGroupsRef, (snapshot) => {
+      const allGroups = snapshot.val();
+      const userGroupsArr = [];
+
+      for (const id in allGroups) {
+        if (allGroups[id].members && allGroups[id].members[user.uid]) {
+          userGroupsArr.push({ ...allGroups[id], id });
+        }
+      }
+
+      setUserGroups(userGroupsArr);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
     const savedGroupId = localStorage.getItem('currentGroupId');
     if (savedGroupId) {
       setCurrentGroupId(savedGroupId);
@@ -36,15 +59,8 @@ function App() {
   const handleCreateGroup = async (name: string, description: string, budget: number) => {
     try {
       const groupId = await createGroup(name, description, budget);
-      setCurrentGroupId(groupId);
       localStorage.setItem('currentGroupId', groupId);
-      
-      // Update user groups list
-      const newGroup = { id: groupId, name, description, budget };
-      const updatedGroups = [...userGroups, newGroup];
-      setUserGroups(updatedGroups);
-      localStorage.setItem('userGroups', JSON.stringify(updatedGroups));
-      
+      setCurrentGroupId(groupId);
       setActiveTab('cart');
     } catch (error) {
       throw error;
@@ -68,12 +84,25 @@ function App() {
     setActiveTab('cart');
   };
 
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      await remove(ref(database, `groups/${groupId}`));
+      if (currentGroupId === groupId) {
+        setCurrentGroupId(null);
+        localStorage.removeItem('currentGroupId');
+      }
+      toast.success('Group deleted successfully');
+    } catch {
+      toast.error('Failed to delete group');
+    }
+  };
+
   const handleAddToCart = async (product: any) => {
     if (!group) {
       toast.error('Please select a group first');
       return;
     }
-    
+
     try {
       await addItemToCart({
         name: product.name,
@@ -141,7 +170,7 @@ function App() {
                     </h2>
                     <p className="text-gray-600 mb-4">{group.description}</p>
                     <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span>{Object.keys(group.members).length} members</span>
+                      <span>{Object.keys(group.members || {}).length} members</span>
                       <span>•</span>
                       <span>Group ID: {group.id}</span>
                     </div>
@@ -172,7 +201,7 @@ function App() {
               )}
             </div>
           )}
-          
+
           {activeTab === 'groups' && (
             <GroupsView
               groups={userGroups}
@@ -180,14 +209,15 @@ function App() {
               onCreateGroup={handleCreateGroup}
               onJoinGroup={handleJoinGroup}
               onSelectGroup={handleSelectGroup}
+              onDeleteGroup={handleDeleteGroup}
             />
           )}
-          
+
           {activeTab === 'activity' && (
             <ActivityView activity={group?.activity || []} />
           )}
         </Layout>
-        
+
         <Toaster position="top-right" />
       </div>
     </Router>

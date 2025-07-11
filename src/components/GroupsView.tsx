@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Users, Calendar, DollarSign, Copy, Check } from 'lucide-react';
+import { Plus, Users, Calendar, DollarSign, Copy, Check, Trash2 } from 'lucide-react';
 import type { ShoppingGroup } from '../types';
 import toast from 'react-hot-toast';
 
@@ -9,6 +9,7 @@ interface GroupsViewProps {
   onCreateGroup: (name: string, description: string, budget: number) => void;
   onJoinGroup: (groupId: string) => void;
   onSelectGroup: (groupId: string) => void;
+  onDeleteGroup?: (groupId: string) => void;
 }
 
 const GroupsView: React.FC<GroupsViewProps> = ({
@@ -16,7 +17,8 @@ const GroupsView: React.FC<GroupsViewProps> = ({
   currentGroup,
   onCreateGroup,
   onJoinGroup,
-  onSelectGroup
+  onSelectGroup,
+  onDeleteGroup
 }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
@@ -221,20 +223,34 @@ const GroupsView: React.FC<GroupsViewProps> = ({
           >
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-semibold text-gray-900">{group.name}</h3>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  copyGroupId(group.id);
-                }}
-                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label="Copy Group ID"
-              >
-                {copiedGroupId === group.id ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Copy className="h-4 w-4" />
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyGroupId(group.id);
+                  }}
+                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label="Copy Group ID"
+                >
+                  {copiedGroupId === group.id ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
+                {onDeleteGroup && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      onDeleteGroup(group.id);
+                    }}
+                    className="p-1 text-red-400 hover:text-red-600 transition-colors"
+                    aria-label="Delete Group"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 )}
-              </button>
+              </div>
             </div>
 
             <p className="text-gray-600 text-sm mb-4">{group.description}</p>

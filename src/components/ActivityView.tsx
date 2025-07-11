@@ -3,10 +3,10 @@ import { Clock, ShoppingCart, Users, Trash2, Edit } from 'lucide-react';
 import type { ActivityLog } from '../types';
 
 interface ActivityViewProps {
-  activity: ActivityLog[];
+  activity?: ActivityLog[]; // mark optional in case parent passes undefined
 }
 
-const ActivityView: React.FC<ActivityViewProps> = ({ activity }) => {
+const ActivityView: React.FC<ActivityViewProps> = ({ activity = [] }) => {
   const getActivityIcon = (type: ActivityLog['type']) => {
     switch (type) {
       case 'item_added':
@@ -42,7 +42,9 @@ const ActivityView: React.FC<ActivityViewProps> = ({ activity }) => {
     }
   };
 
-  const sortedActivity = [...activity].sort((a, b) => b.timestamp - a.timestamp);
+  const sortedActivity = Array.isArray(activity)
+    ? [...activity].sort((a, b) => b.timestamp - a.timestamp)
+    : [];
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
