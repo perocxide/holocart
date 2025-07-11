@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Users, Calendar, DollarSign, Copy, Check, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../hooks/useAuth';
 import type { ShoppingGroup } from '../types';
 
 interface GroupsViewProps {
@@ -20,6 +21,7 @@ const GroupsView: React.FC<GroupsViewProps> = ({
   onSelectGroup,
   onDeleteGroup
 }) => {
+  const { user: currentUser } = useAuth();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '', budget: '' });
@@ -141,9 +143,8 @@ const GroupsView: React.FC<GroupsViewProps> = ({
       {/* Groups List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {groups.map((group) => (
-          <div key={group.id} className={`bg-white p-4 rounded-lg border shadow-sm cursor-pointer transition ${
-            currentGroup?.id === group.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-          }`} onClick={() => onSelectGroup(group.id)}>
+          <div key={group.id} className={`bg-white p-4 rounded-lg border shadow-sm cursor-pointer transition ${currentGroup?.id === group.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+            }`} onClick={() => onSelectGroup(group.id)}>
             <div className="flex justify-between items-center">
               <h3 className="font-semibold text-lg">{group.name}</h3>
               <div className="flex items-center space-x-2">
@@ -160,7 +161,33 @@ const GroupsView: React.FC<GroupsViewProps> = ({
               <div className="flex items-center"><Users className="h-4 w-4 mr-1" /> {Object.keys(group.members || {}).length} members</div>
               <div className="flex items-center"><DollarSign className="h-4 w-4 mr-1" /> ${group.totalSpent?.toFixed(2)} / ${group.budget?.toFixed(2)}</div>
               <div className="flex items-center"><Calendar className="h-4 w-4 mr-1" /> Created {formatDate(group.createdAt)}</div>
-              {group.totalSpent > group.budget && <div className="text-red-500 text-xs font-medium">Over budget!</div>}
+              {group.totalSpent > group.budget && (
+                <div className="text-red-500 text-xs font-medium">
+                  {group.overBudgetConfirmed ? (
+                    <span className="ml-2 text-green-500 font-medium">Overbudget confirmed</span>
+                  ) : (
+                    <>
+                      Over budget!
+                      {group.createdBy === currentUser?.uid ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Budget exceeded! Do you still want to add more?')) {
+                              group.overBudgetConfirmed = true;
+                              toast.success('Overbudget confirmed!');
+                            }
+                          }}
+                          className="text-blue-500 hover:underline"
+                        >
+                          Confirm
+                        </button>
+                      ) : (
+                        <span className="text-gray-500">Only the creator can confirm</span>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}

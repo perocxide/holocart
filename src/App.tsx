@@ -9,6 +9,7 @@ import CartView from './components/CartView';
 import GroupsView from './components/GroupsView';
 import ActivityView from './components/ActivityView';
 import ProductSearch from './components/ProductSearch';
+import { BudgetEditor } from './components/BudgetEditor';
 import toast from 'react-hot-toast';
 import { ref, remove, onValue } from 'firebase/database';
 import { database } from './config/firebase';
@@ -26,7 +27,8 @@ function App() {
     addItemToCart,
     removeItemFromCart,
     updateItemQuantity,
-    addComment
+    addComment,
+    updateBudget
   } = useShoppingGroup(currentGroupId, user);
 
   useEffect(() => {
@@ -173,6 +175,19 @@ function App() {
                       <span>{Object.keys(group.members || {}).length} members</span>
                       <span>•</span>
                       <span>Group ID: {group.id}</span>
+                    </div>
+                    <div className="mt-4">
+                      <BudgetEditor
+                        budget={group.budget}
+                        onUpdate={async (newBudget: number) => {
+                          try {
+                            await updateBudget(newBudget);
+                            toast.success('Budget updated successfully');
+                          } catch (error) {
+                            toast.error('Failed to update budget');
+                          }
+                        }}
+                      />
                     </div>
                   </div>
                   <ProductSearch onAddToCart={handleAddToCart} />

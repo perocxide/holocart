@@ -35,6 +35,7 @@ export interface ShoppingGroup {
   budget: number;
   totalSpent: number;
   activity: ActivityLog[];
+  overBudgetConfirmed?: boolean;
 }
 
 export interface ActivityLog {

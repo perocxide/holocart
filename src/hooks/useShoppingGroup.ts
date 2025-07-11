@@ -185,6 +185,12 @@ export const useShoppingGroup = (groupId: string | null, user: User | null) => {
     await set(commentRef, comment);
   };
 
+  const updateBudget = async (newBudget: number) => {
+    if (!group || !group.id) throw new Error('Group not found');
+    const budgetRef = ref(database, `groups/${group.id}/budget`);
+    await set(budgetRef, newBudget);
+  };
+
   return {
     group,
     loading,
@@ -193,6 +199,7 @@ export const useShoppingGroup = (groupId: string | null, user: User | null) => {
     addItemToCart,
     removeItemFromCart,
     updateItemQuantity,
-    addComment
+    addComment,
+    updateBudget
   };
 };
