@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trash2, MessageSquare, Plus, Minus, DollarSign, Users } from 'lucide-react';
 import type { ShoppingGroup } from '../types';
 import toast from 'react-hot-toast';
+import ChatBox from './ChatBox';
 
 interface CartViewProps {
   group: ShoppingGroup;
@@ -213,6 +214,9 @@ const CartView: React.FC<CartViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Chat Box */}
+      <ChatBox groupId={group.id} group={group} />
     </div>
   );
 };
