@@ -69,7 +69,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, group }) => {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-full shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300 ease-in-out focus:outline-none relative"
+        className="fixed bottom-16 right-10 bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-full shadow-xl hover:shadow-2xl transform hover:scale-110 transition-all duration-300 ease-in-out focus:outline-none z-50"
       >
         <MessageSquare className="h-8 w-8" />
       </button>
