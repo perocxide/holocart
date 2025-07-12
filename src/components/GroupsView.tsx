@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Users, Calendar, DollarSign, Copy, Check, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../hooks/useAuth';
+import { ref, update } from 'firebase/database';
+import { database } from '../config/firebase';
 import type { ShoppingGroup } from '../types';
 
 interface GroupsViewProps {
@@ -11,6 +13,7 @@ interface GroupsViewProps {
   onJoinGroup: (groupId: string) => void;
   onSelectGroup: (groupId: string) => void;
   onDeleteGroup: (groupId: string) => void;
+  onUpdateGroupName: (groupId: string, newName: string) => void; // Add this line
 }
 
 const GroupsView: React.FC<GroupsViewProps> = ({
@@ -19,7 +22,8 @@ const GroupsView: React.FC<GroupsViewProps> = ({
   onCreateGroup,
   onJoinGroup,
   onSelectGroup,
-  onDeleteGroup
+  onDeleteGroup,
+  onUpdateGroupName // Add this line
 }) => {
   const { user: currentUser } = useAuth();
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -146,7 +150,39 @@ const GroupsView: React.FC<GroupsViewProps> = ({
           <div key={group.id} className={`bg-white p-4 rounded-lg border shadow-sm cursor-pointer transition ${currentGroup?.id === group.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
             }`} onClick={() => onSelectGroup(group.id)}>
             <div className="flex justify-between items-center">
-              <h3 className="font-semibold text-lg">{group.name}</h3>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg flex items-center">
+                  {group.name}
+                  {group.isAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newName = prompt('Enter new group name:', group.name);
+                        if (newName && newName !== group.name) {
+                          onUpdateGroupName(group.id, newName);
+                          toast.success('Group name updated!');
+                        }
+                      }}
+                      className="ml-2 text-gray-500 hover:text-gray-700"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="w-5 h-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.213l-4.5 1.5 1.5-4.5 12.362-12.726z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </h3>
+              </div>
               <div className="flex items-center space-x-2">
                 <button onClick={(e) => { e.stopPropagation(); copyGroupId(group.id); }} className="text-gray-400 hover:text-gray-600">
                   {copiedGroupId === group.id ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
@@ -173,8 +209,14 @@ const GroupsView: React.FC<GroupsViewProps> = ({
                           onClick={(e) => {
                             e.stopPropagation();
                             if (window.confirm('Budget exceeded! Do you still want to add more?')) {
-                              group.overBudgetConfirmed = true;
-                              toast.success('Overbudget confirmed!');
+                              const groupRef = ref(database, `groups/${group.id}`);
+                              update(groupRef, { overBudgetConfirmed: true })
+                                .then(() => {
+                                  toast.success('Overbudget confirmed!');
+                                })
+                                .catch(() => {
+                                  toast.error('Failed to confirm overbudget');
+                                });
                             }
                           }}
                           className="text-blue-500 hover:underline"

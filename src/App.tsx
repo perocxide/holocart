@@ -11,7 +11,7 @@ import ActivityView from './components/ActivityView';
 import ProductSearch from './components/ProductSearch';
 import { BudgetEditor } from './components/BudgetEditor';
 import toast from 'react-hot-toast';
-import { ref, remove, onValue } from 'firebase/database';
+import { ref, remove, onValue, update } from 'firebase/database';
 import { database } from './config/firebase';
 
 function App() {
@@ -41,7 +41,11 @@ function App() {
 
       for (const id in allGroups) {
         if (allGroups[id].members && allGroups[id].members[user.uid]) {
-          userGroupsArr.push({ ...allGroups[id], id });
+          userGroupsArr.push({
+            ...allGroups[id],
+            id,
+            isAdmin: allGroups[id].createdBy === user.uid // Set isAdmin property
+          });
         }
       }
 
@@ -225,6 +229,19 @@ function App() {
               onJoinGroup={handleJoinGroup}
               onSelectGroup={handleSelectGroup}
               onDeleteGroup={handleDeleteGroup}
+              onUpdateGroupName={(groupId, newName) => {
+                const groupRef = ref(database, `groups/${groupId}`);
+                update(groupRef, { name: newName })
+                  .then(() => {
+                    setUserGroups((prevGroups) =>
+                      prevGroups.map((group) =>
+                        group.id === groupId ? { ...group, name: newName } : group
+                      )
+                    );
+                    toast.success('Group name updated successfully!');
+                  })
+                  .catch(() => toast.error('Failed to update group name'));
+              }}
             />
           )}
 

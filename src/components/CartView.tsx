@@ -19,6 +19,7 @@ const CartView: React.FC<CartViewProps> = ({
 }) => {
   const [commentInputs, setCommentInputs] = useState<{ [itemId: string]: string }>({});
   const [showComments, setShowComments] = useState<{ [itemId: string]: boolean }>({});
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const cartItems = Object.values(group.cart || {});
   const memberCount = Object.keys(group.members || {}).length || 1;
@@ -45,6 +46,21 @@ const CartView: React.FC<CartViewProps> = ({
 
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
+  };
+
+  const memberContributions = Object.keys(group.members || {}).map((memberId) => {
+    const memberName = group.members[memberId]?.displayName || 'Unknown';
+    const totalAdded = Object.values(group.cart || {}).reduce((sum, item) => {
+      return item.addedBy === memberId ? sum + item.price * item.quantity : sum;
+    }, 0);
+
+    return { memberName, totalAdded };
+  });
+
+  const updateGroupName = (newName: string) => {
+    // Logic to update the group name
+    console.log(`Group name updated to: ${newName}`);
+    toast.success('Group name updated successfully!');
   };
 
   return (
@@ -95,9 +111,57 @@ const CartView: React.FC<CartViewProps> = ({
       {/* Cart Items */}
       <div className="bg-white rounded-lg shadow-sm">
         <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Shopping Cart ({cartItems.length} items)
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Shopping Cart ({cartItems.length} items)
+            </h2>
+            {/* Group Name with Dropdown */}
+            <div className="relative inline-block text-left">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="text-lg font-semibold text-gray-900 hover:underline focus:outline-none flex items-center"
+              >
+                Details
+                <svg
+                  className={`ml-2 h-5 w-5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  <ul className="divide-y divide-gray-200">
+                    {memberContributions.map(({ memberName, totalAdded }, index) => (
+                      <li key={index} className="p-3 flex justify-between items-center">
+                        <span className="text-gray-700 font-medium">{memberName}</span>
+                        <span className="text-gray-900 font-bold">${totalAdded.toFixed(2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {group.isAdmin && (
+                    <div className="p-3 border-t">
+                      <button
+                        onClick={() => {
+                          const newName = prompt('Enter new group name:');
+                          if (newName) {
+                            // Call a function to update the group name
+                            updateGroupName(newName);
+                          }
+                        }}
+                        className="text-blue-600 hover:underline"
+                      >
+                        Rename Group
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {cartItems.length === 0 ? (

@@ -36,6 +36,7 @@ export interface ShoppingGroup {
   totalSpent: number;
   activity: ActivityLog[];
   overBudgetConfirmed?: boolean;
+  isAdmin?: boolean; // Add this line
 }
 
 export interface ActivityLog {
