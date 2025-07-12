@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuth } from './hooks/useAuth';
 import { useShoppingGroup } from './hooks/useShoppingGroup';
@@ -13,6 +13,7 @@ import { BudgetEditor } from './components/BudgetEditor';
 import toast from 'react-hot-toast';
 import { ref, remove, onValue, update } from 'firebase/database';
 import { database } from './config/firebase';
+import LandingPage from './components/LandingPage';
 
 function App() {
   const { user, loading: authLoading } = useAuth();
@@ -165,90 +166,95 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
-        <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-          {activeTab === 'cart' && (
-            <div className="space-y-6">
-              {group ? (
-                <>
-                  <div className="bg-white rounded-lg shadow-sm p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                      {group.name}
-                    </h2>
-                    <p className="text-gray-600 mb-4">{group.description}</p>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span>{Object.keys(group.members || {}).length} members</span>
-                      <span>•</span>
-                      <span>Group ID: {group.id}</span>
-                    </div>
-                    <div className="mt-4">
-                      <BudgetEditor
-                        budget={group.budget}
-                        onUpdate={async (newBudget: number) => {
-                          try {
-                            await updateBudget(newBudget);
-                            toast.success('Budget updated successfully');
-                          } catch (error) {
-                            toast.error('Failed to update budget');
-                          }
-                        }}
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/dashboard" element={
+            <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+              {activeTab === 'cart' && (
+                <div className="space-y-6">
+                  {group ? (
+                    <>
+                      <div className="bg-white rounded-lg shadow-sm p-6">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                          {group.name}
+                        </h2>
+                        <p className="text-gray-600 mb-4">{group.description}</p>
+                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                          <span>{Object.keys(group.members || {}).length} members</span>
+                          <span>•</span>
+                          <span>Group ID: {group.id}</span>
+                        </div>
+                        <div className="mt-4">
+                          <BudgetEditor
+                            budget={group.budget}
+                            onUpdate={async (newBudget: number) => {
+                              try {
+                                await updateBudget(newBudget);
+                                toast.success('Budget updated successfully');
+                              } catch (error) {
+                                toast.error('Failed to update budget');
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <ProductSearch onAddToCart={handleAddToCart} />
+                      <CartView
+                        group={group}
+                        onRemoveItem={handleRemoveItem}
+                        onUpdateQuantity={handleUpdateQuantity}
+                        onAddComment={handleAddComment}
                       />
+                    </>
+                  ) : (
+                    <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                        No Group Selected
+                      </h2>
+                      <p className="text-gray-600 mb-6">
+                        Create a new group or join an existing one to start shopping collaboratively.
+                      </p>
+                      <button
+                        onClick={() => setActiveTab('groups')}
+                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Manage Groups
+                      </button>
                     </div>
-                  </div>
-                  <ProductSearch onAddToCart={handleAddToCart} />
-                  <CartView
-                    group={group}
-                    onRemoveItem={handleRemoveItem}
-                    onUpdateQuantity={handleUpdateQuantity}
-                    onAddComment={handleAddComment}
-                  />
-                </>
-              ) : (
-                <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                    No Group Selected
-                  </h2>
-                  <p className="text-gray-600 mb-6">
-                    Create a new group or join an existing one to start shopping collaboratively.
-                  </p>
-                  <button
-                    onClick={() => setActiveTab('groups')}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Manage Groups
-                  </button>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          {activeTab === 'groups' && (
-            <GroupsView
-              groups={userGroups}
-              currentGroup={group}
-              onCreateGroup={handleCreateGroup}
-              onJoinGroup={handleJoinGroup}
-              onSelectGroup={handleSelectGroup}
-              onDeleteGroup={handleDeleteGroup}
-              onUpdateGroupName={(groupId, newName) => {
-                const groupRef = ref(database, `groups/${groupId}`);
-                update(groupRef, { name: newName })
-                  .then(() => {
-                    setUserGroups((prevGroups) =>
-                      prevGroups.map((group) =>
-                        group.id === groupId ? { ...group, name: newName } : group
-                      )
-                    );
-                    toast.success('Group name updated successfully!');
-                  })
-                  .catch(() => toast.error('Failed to update group name'));
-              }}
-            />
-          )}
+              {activeTab === 'groups' && (
+                <GroupsView
+                  groups={userGroups}
+                  currentGroup={group}
+                  onCreateGroup={handleCreateGroup}
+                  onJoinGroup={handleJoinGroup}
+                  onSelectGroup={handleSelectGroup}
+                  onDeleteGroup={handleDeleteGroup}
+                  onUpdateGroupName={(groupId, newName) => {
+                    const groupRef = ref(database, `groups/${groupId}`);
+                    update(groupRef, { name: newName })
+                      .then(() => {
+                        setUserGroups((prevGroups) =>
+                          prevGroups.map((group) =>
+                            group.id === groupId ? { ...group, name: newName } : group
+                          )
+                        );
+                        toast.success('Group name updated successfully!');
+                      })
+                      .catch(() => toast.error('Failed to update group name'));
+                  }}
+                />
+              )}
 
-          {activeTab === 'activity' && (
-            <ActivityView activity={group?.activity || []} />
-          )}
-        </Layout>
+              {activeTab === 'activity' && (
+                <ActivityView activity={group?.activity || []} />
+              )}
+            </Layout>
+          } />
+        </Routes>
 
         <Toaster position="top-right" />
       </div>
