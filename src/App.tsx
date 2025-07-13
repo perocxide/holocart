@@ -14,6 +14,8 @@ import toast from 'react-hot-toast';
 import { ref, remove, onValue, update } from 'firebase/database';
 import { database } from './config/firebase';
 import LandingPage from './components/LandingPage';
+import AddressSelection from './components/AddressSelection';
+import PaymentInterface from './components/PaymentInterface';
 
 function App() {
   const { user, loading: authLoading } = useAuth();
@@ -201,6 +203,7 @@ function App() {
                       <ProductSearch onAddToCart={handleAddToCart} />
                       <CartView
                         group={group}
+                        currentUserId={user.uid} // Pass the current user's ID
                         onRemoveItem={handleRemoveItem}
                         onUpdateQuantity={handleUpdateQuantity}
                         onAddComment={handleAddComment}
@@ -254,6 +257,8 @@ function App() {
               )}
             </Layout>
           } />
+          <Route path="/address-selection" element={<AddressSelection />} />
+          <Route path="/payment" element={<PaymentInterface />} />
         </Routes>
 
         <Toaster position="top-right" />

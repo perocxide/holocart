@@ -1,25 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trash2, MessageSquare, Plus, Minus, DollarSign, Users } from 'lucide-react';
 import type { ShoppingGroup } from '../types';
 import toast from 'react-hot-toast';
 import ChatBox from './ChatBox';
+import { useNavigate } from 'react-router-dom';
+import { getDatabase, ref, get } from 'firebase/database';
 
 interface CartViewProps {
   group: ShoppingGroup;
   onRemoveItem: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onAddComment: (itemId: string, comment: string) => void;
+  currentUserId: string; // Add currentUserId as a prop
 }
 
 const CartView: React.FC<CartViewProps> = ({
   group,
   onRemoveItem,
   onUpdateQuantity,
-  onAddComment
+  onAddComment,
+  currentUserId
 }) => {
+  const navigate = useNavigate();
   const [commentInputs, setCommentInputs] = useState<{ [itemId: string]: string }>({});
   const [showComments, setShowComments] = useState<{ [itemId: string]: boolean }>({});
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const cartItems = Object.values(group.cart || {});
   const memberCount = Object.keys(group.members || {}).length || 1;
@@ -28,6 +34,27 @@ const CartView: React.FC<CartViewProps> = ({
   const budget = typeof group.budget === 'number' ? group.budget : 1;
 
   const costPerMember = totalSpent / memberCount;
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const db = getDatabase();
+        const groupRef = ref(db, `groups/${group.id}/createdBy`); // Corrected the path to match the creator field
+        const snapshot = await get(groupRef);
+        if (snapshot.exists()) {
+          const creatorId = snapshot.val();
+          setIsAdmin(creatorId === currentUserId);
+        } else {
+          setIsAdmin(false); // Explicitly set to false if no creatorId is found
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false); // Fallback to non-admin in case of error
+      }
+    };
+
+    checkAdminStatus();
+  }, [group.id, currentUserId]);
 
   const handleCommentSubmit = (itemId: string) => {
     const comment = commentInputs[itemId]?.trim();
@@ -61,6 +88,18 @@ const CartView: React.FC<CartViewProps> = ({
     // Logic to update the group name
     console.log(`Group name updated to: ${newName}`);
     toast.success('Group name updated successfully!');
+  };
+
+  const handleRequestSplits = () => {
+    alert('Request sent to members for their splits.');
+  };
+
+  const handlePaySplit = () => {
+    alert('Your split payment has been recorded.');
+  };
+
+  const handleRequestAdminPayment = () => {
+    alert('Request sent to admin for final payment.');
   };
 
   return (
@@ -276,6 +315,41 @@ const CartView: React.FC<CartViewProps> = ({
               </div>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-end space-x-4">
+        {isAdmin ? (
+          <>
+            <button
+              onClick={handleRequestSplits}
+              className="bg-yellow-500 text-white px-4 py-2 rounded"
+            >
+              Request Members for Splits
+            </button>
+            <button
+              onClick={() => navigate('/address-selection')}
+              className="bg-green-500 text-white px-4 py-2 rounded ml-4"
+            >
+              Buy Cart
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={handlePaySplit}
+              className="bg-blue-500 text-white px-4 py-2 rounded"
+            >
+              Pay Your Split
+            </button>
+            <button
+              onClick={handleRequestAdminPayment}
+              className="bg-yellow-500 text-white px-4 py-2 rounded ml-4"
+            >
+              Request Admin for Final Payment
+            </button>
+          </>
         )}
       </div>
 
