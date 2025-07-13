@@ -23,8 +23,3 @@ dist-ssr
 *.sln
 *.sw?
 .env
-
-#md files
-
-SETUP.md
-DEMO_SCRIPT.md
