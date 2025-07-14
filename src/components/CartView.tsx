@@ -4,7 +4,7 @@ import type { ShoppingGroup } from '../types';
 import toast from 'react-hot-toast';
 import ChatBox from './ChatBox';
 import { useNavigate } from 'react-router-dom';
-import { getDatabase, ref, get } from 'firebase/database';
+import { getDatabase, ref, get, onValue } from 'firebase/database';
 
 interface CartViewProps {
   group: ShoppingGroup;
@@ -55,6 +55,28 @@ const CartView: React.FC<CartViewProps> = ({
 
     checkAdminStatus();
   }, [group.id, currentUserId]);
+
+  useEffect(() => {
+    const db = getDatabase();
+    const activityRef = ref(db, `groups/${group.id}/activity`);
+
+    const unsubscribe = onValue(activityRef, (snapshot) => {
+      const activityData = snapshot.val();
+      if (activityData) {
+        const activityEntries = Object.entries(activityData);
+        const lastActivityEntry = activityEntries[activityEntries.length - 1]; // Get the most recent activity
+
+        if (lastActivityEntry) {
+          const [, lastActivity] = lastActivityEntry as [string, { message: string }];
+          toast(lastActivity.message, {
+            icon: '🔔',
+          });
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [group.id]);
 
   const handleCommentSubmit = (itemId: string) => {
     const comment = commentInputs[itemId]?.trim();
